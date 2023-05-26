@@ -55,6 +55,55 @@ module "ya_instance_2" {
   vpc_subnet_id         = yandex_vpc_subnet.subnet2.id
 }
 
+#группa для балансировщика
+
+resource "yandex_lb_target_group" "test" {
+  name           = "test"
+  
+  target {
+    subnet_id    = "${yandex_vpc_subnet.subnet1.id}"
+    address   = "${module.ya_instance_1.internal_ip_address_vm}"
+
+  }
+
+  target {
+    subnet_id    = "${yandex_vpc_subnet.subnet2.id}"
+    address   = "${module.ya_instance_2.internal_ip_address_vm}"
+  }
+}
+
+#сетевой балансировщик
+
+resource "yandex_lb_network_load_balancer" "foo" {
+  name = "my-network-load-balancer"
+
+  listener {
+    name        = "test-listener"
+    port        = 80
+    target_port = 81
+    protocol    = "tcp"
+    external_address_spec {
+      ip_version = "ipv4"
+    }
+  }
+
+attached_target_group {
+    target_group_id = "${yandex_lb_target_group.test.id}"
+
+    healthcheck {
+      name                = "http"
+      interval            = 2
+      timeout             = 1
+      unhealthy_threshold = 2
+      healthy_threshold   = 2
+      http_options {
+        port = 80
+        path = "/"
+      }
+    }
+  }
+}
+
 # Создаем сервис-аккаунт SA
 resource "yandex_iam_service_account" "sa" {
   folder_id = var.folder_id

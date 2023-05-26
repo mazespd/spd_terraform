@@ -4,7 +4,7 @@ terraform {
       source = "yandex-cloud/yandex"
     }
   }
-  }
+}
 data "yandex_compute_image" "my_image" {
   family = var.instance_family_image
 }
